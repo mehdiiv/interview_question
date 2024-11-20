@@ -1,14 +1,9 @@
-import jwt
 from django.test import TestCase
 from decouple import config
 from api.models import User
+from api.common_methods import create_jwt
 
 JWT_SECRET_KEY = config('JWT_SECRET_KEY')
-
-
-def create_jwt(email):
-
-    return jwt.encode({'email': email}, JWT_SECRET_KEY, algorithm="HS256")
 
 
 class UserModelTest(TestCase):
