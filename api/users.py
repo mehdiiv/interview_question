@@ -5,7 +5,8 @@ from django.utils.decorators import method_decorator
 from django.forms.models import model_to_dict
 from .models import User
 from .common_methods import (
-    create_jwt, fetch_data, render_error, valid_email
+    create_jwt, fetch_data, render_error, valid_email,
+    set_limit_offset
     )
 
 
@@ -27,22 +28,9 @@ class UsersView(View):
         return JsonResponse(model_to_dict(user), status=201)
 
     def get(self, request):
-        limit, offset = self.set_limit_offset(request)
+        limit, offset = set_limit_offset(request)
         users = User.objects.all()[offset:offset+limit]
         users_list = []
         for item in users:
             users_list.append(model_to_dict(item))
         return JsonResponse({'users': users_list}, status=200)
-
-    def set_limit_offset(self, request):
-        offset = 0
-        limit = 10
-        if request.GET.get('limit') and request.GET.get(
-            'offset') is not None and request.GET.get(
-                'limit').isdigit() and request.GET.get(
-                    'offset').isdigit():
-            offset = int(request.GET.get('offset'))
-            limit = int(request.GET.get('limit'))
-            if limit > 30:
-                limit = 30
-        return limit, offset
