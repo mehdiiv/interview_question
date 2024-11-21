@@ -1,34 +1,12 @@
 from django.views import View
 from django.http import JsonResponse
-from django.core.exceptions import ValidationError
-from django.core.validators import validate_email
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.forms.models import model_to_dict
-import json
 from .models import User
-from .common_methods import create_jwt
-
-
-def fetch_data(json_data):
-    try:
-        return False, json.loads(json_data)
-    except json.JSONDecodeError:
-        return True, None
-
-
-def render_error(message, status=422):
-    return JsonResponse({'error_message': message}, status=status)
-
-
-def valid_email(email):
-    if email is None or email == '':
-        return True, 'email cannot be empty'
-    try:
-        validate_email(email)
-        return False, None
-    except ValidationError:
-        return True, 'email is incorrect'
+from .common_methods import (
+    create_jwt, fetch_data, render_error, valid_email
+    )
 
 
 @method_decorator(csrf_exempt, name='dispatch')
