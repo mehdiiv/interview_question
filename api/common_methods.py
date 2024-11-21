@@ -57,3 +57,19 @@ def authorization(bearer_token):
     if not objects.exists():
         raise AuthorizeError
     return objects[0]
+
+
+def set_limit_offset(request):
+    offset = 0
+    limit = 10
+    if request.GET.get(
+        'limit'
+    ) is not None and request.GET.get('limit').isdigit():
+        limit = int(request.GET.get('limit'))
+    if request.GET.get(
+        'offset'
+    ) is not None and request.GET.get('offset').isdigit():
+        offset = int(request.GET.get('offset'))
+        if limit > 30:
+            limit = 30
+    return limit, offset
