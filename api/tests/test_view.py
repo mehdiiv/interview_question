@@ -4,6 +4,7 @@ from decouple import config
 from api.models import User, Message
 import json
 from api.common_methods import create_jwt
+import jwt
 
 JWT_SECRET_KEY = config('JWT_SECRET_KEY')
 
@@ -249,3 +250,97 @@ class ApiTest(TestCase):
         self.assertEqual(
             response.json()['error_message'], 'title cannot be empty'
               )
+
+    def test_api_list_messages(self):
+        Message.objects.create(
+            user_id=self.user.id,
+            title='testtiltle2', body='testbody2'
+            )
+        Message.objects.create(
+            user_id=self.user.id,
+            title='testtiltle3', body='testbody3'
+            )
+        response = self.client.get(
+            reverse('messages'),
+            headers={'Authorization': self.bearer_token}
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            len(response.json().get('messages')), 3
+            )
+        self.assertEqual(
+            response.json().get('messages')[2].get('body'), 'testbody3'
+            )
+        message_dic = []
+        for item in response.json().get('messages'):
+            message_dic.append(item.get('id'))
+        self.assertEqual(message_dic, [1, 2, 3])
+
+    def test_api_list_messages_query_params_search(self):
+        Message.objects.create(
+            user_id=self.user.id,
+            title='testtiltle2', body='testbody2'
+            )
+        Message.objects.create(
+            user_id=self.user.id,
+            title='testtiltle3', body='testbody3'
+            )
+        response = self.client.get(
+            reverse('messages'),
+            {'search_by': 'body2'},
+            headers={'Authorization': self.bearer_token}
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json().get('messages')[0].get('body'), 'testbody2'
+            )
+        message_dic = []
+        for item in response.json().get('messages'):
+            message_dic.append(item.get('id'))
+        self.assertEqual(message_dic, [2])
+
+    def test_api_list_messages_query_params(self):
+        Message.objects.create(
+            user_id=self.user.id,
+            title='testtiltle2',
+            body='testbody2'
+            )
+        Message.objects.create(
+            user_id=self.user.id,
+            title='testtiltle3', body='testbody3'
+            )
+        response = self.client.get(
+            reverse('messages'),
+            {'limit': '1', 'offset': '0'},
+            headers={'Authorization': self.bearer_token}
+            )
+        self.assertEqual(response.status_code, 200)
+        message_dic = []
+        for item in response.json().get('messages'):
+            message_dic.append(item)
+        self.assertEqual(len(message_dic), 1)
+
+    def test_api_list_messages_wrong_query(self):
+        Message.objects.create(
+            user_id=self.user.id,
+            title='testtiltle2', body='testbody2'
+            )
+        Message.objects.create(
+            user_id=self.user.id,
+            title='testtiltle3', body='testbody3'
+            )
+        response = self.client.get(
+            reverse('messages'), {'limit': 'sdsd', 'offset': 'dsds'},
+            headers={'Authorization': self.bearer_token}
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            len(response.json().get('messages')), 3
+            )
+        self.assertEqual(
+            response.json().get('messages')[2].get('body'), 'testbody3'
+            )
+        message_dic = []
+        for item in response.json().get('messages'):
+            message_dic.append(item.get('id'))
+        self.assertEqual(message_dic, [1, 2, 3])

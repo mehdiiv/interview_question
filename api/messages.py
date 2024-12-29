@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django.views import View
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -7,6 +8,7 @@ from .models import Message
 from .common_methods import (
     render_error, fetch_data,
     authorization, AuthorizeError,
+    set_limit_offset,
  )
 
 
@@ -32,5 +34,23 @@ class MessagesViews(View):
                 ], body=message_load_data['body']
             )
             return JsonResponse(model_to_dict(message), status=201)
+        except AuthorizeError:
+            return render_error('you are not authorised')
+
+    def get(self, request):
+        try:
+            user = authorization(request.headers.get('Authorization'))
+            messges = Message.objects.filter(user=user)
+            if request.GET.get('search_by') is not None:
+                search_by = request.GET.get('search_by')
+                messges = Message.objects.filter(
+                    Q(body__icontains=search_by), user=user
+                )
+            limit, offset = set_limit_offset(request)
+            messges = messges[offset:offset+limit]
+            messages_list = []
+            for item in messges:
+                messages_list.append(model_to_dict(item))
+            return JsonResponse({'messages': messages_list}, status=200)
         except AuthorizeError:
             return render_error('you are not authorised')
