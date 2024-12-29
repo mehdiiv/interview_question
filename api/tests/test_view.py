@@ -89,3 +89,45 @@ class ApiTest(TestCase):
             response.json()['error_message'],
             'email is incorrect'
         )
+
+    def test_api_users_list_limit(self):
+        User.objects.create(
+            email='test3@test3.com',
+            json_web_token=create_jwt('test3@test3.com')
+            )
+        User.objects.create(
+            email='test2@test2.com',
+            json_web_token=create_jwt('test2@test2.com')
+              )
+        response = self.client.get(
+            reverse('users'),
+            {'limit': 2, 'offset': '0'}
+              )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            len(response.json().get('users')), 2
+            )
+        users_dic = []
+        for item in response.json().get('users'):
+            users_dic.append(item)
+        self.assertEqual(len(users_dic), 2)
+
+    def test_api_users_list_invalid_limit(self):
+        User.objects.create(
+            email='test3@test3.com',
+            json_web_token=create_jwt('test3@test3.com')
+        )
+        User.objects.create(
+            email='test2@test2.com',
+            json_web_token=create_jwt('test2@test2.com')
+        )
+        response = self.client.get(
+            reverse('users'),
+            {'limit': 'sfsafa',  'offset': 'sdsd'}
+         )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json().get('users')), 3)
+        users_dic = []
+        for item in response.json().get('users'):
+            users_dic.append(item.get('id'))
+        self.assertEqual(users_dic, [1, 2, 3])

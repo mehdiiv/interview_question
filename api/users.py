@@ -6,6 +6,7 @@ from django.forms.models import model_to_dict
 from .models import User
 from .common_methods import (
     create_jwt, fetch_data, render_error, valid_email,
+    set_limit_offset
     )
 
 
@@ -25,3 +26,11 @@ class UsersView(View):
                                    json_web_token=create_jwt(load_data['email'
                                                                        ]))
         return JsonResponse(model_to_dict(user), status=201)
+
+    def get(self, request):
+        limit, offset = set_limit_offset(request)
+        users = User.objects.all()[offset:offset+limit]
+        users_list = []
+        for item in users:
+            users_list.append(model_to_dict(item))
+        return JsonResponse({'users': users_list}, status=200)
