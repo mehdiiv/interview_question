@@ -9,3 +9,14 @@ class User(models.Model):
 
     class Meta:
         db_table = "users"
+
+
+class Message(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    title = models.CharField(max_length=512)
+    body = models.TextField(max_length=2048)
+    create_at = models.TimeField(auto_now_add=True)
+    updated_at = models.TimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'messages'
