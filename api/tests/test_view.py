@@ -344,3 +344,103 @@ class ApiTest(TestCase):
         for item in response.json().get('messages'):
             message_dic.append(item.get('id'))
         self.assertEqual(message_dic, [1, 2, 3])
+
+    def test_api_message_detail(self):
+        response = self.client.get(
+            reverse('message', kwargs={'pk': self.message.id}),
+            headers={'Authorization': self.bearer_token}
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json().get('message')[0].get('title'), 'testtiltle'
+        )
+
+    def test_api_message_detail_wrong_date(self):
+        self.api_message_detail_not_exist_pk()
+        self.api_message_detail_invalid_data_invaldi_jwt()
+        self.api_message_detail_invalid_data_not_exist_mail()
+        self.api_message_detail_invalid_data_null_mail()
+        self.api_message_detail_invalid_data_empty_string_mail()
+        self.api_message_detail_invalid_data_inccorect_mail()
+
+    def api_message_detail_without_jwt(self):
+        response = self.client.get(
+            reverse('message', kwargs={'pk': self.message.id})
+        )
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(
+            response.json()['error_message'], 'you are not authorised'
+        )
+
+    def api_message_detail_not_exist_pk(self):
+        response = self.client.get(
+            reverse('message', kwargs={'pk': 1024}),
+            headers={'Authorization': self.bearer_token}
+        )
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(
+            response.json()['error_message'],
+            'message does not exist'
+        )
+
+    def api_message_detail_invalid_data_invaldi_jwt(self):
+        response = self.client.get(
+            reverse('message', kwargs={'pk': self.message.id}),
+            headers={'Authorization': 'invalidjsfswt'}
+        )
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(
+            response.json()['error_message'],
+            'you are not authorised'
+        )
+
+    def api_message_detail_invalid_data_not_exist_mail(self):
+        response = self.client.get(
+            reverse('message', kwargs={'pk': self.message.id}),
+            headers={'Authorization': 'bearer ' + jwt.encode(
+                {'email': 'notexsit@test.test'},
+                JWT_SECRET_KEY, algorithm="HS256"
+            )}
+        )
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(
+            response.json()['error_message'], 'you are not authorised'
+        )
+
+    def api_message_detail_invalid_data_null_mail(self):
+        response = self.client.get(
+            reverse('message', kwargs={'pk': self.message.id}),
+            headers={'Authorization': 'bearer ' + jwt.encode(
+                {'email': None}, JWT_SECRET_KEY, algorithm="HS256"
+            )}
+        )
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(
+            response.json()['error_message'], 'you are not authorised'
+        )
+
+    def api_message_detail_invalid_data_empty_string_mail(self):
+        response = self.client.get(
+            reverse('message', kwargs={'pk': self.message.id}),
+            headers={'Authorization': 'bearer ' + jwt.encode(
+                {'email': ''}, JWT_SECRET_KEY, algorithm="HS256"
+            )}
+        )
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(
+            response.json()['error_message'], 'you are not authorised'
+        )
+
+    def api_message_detail_invalid_data_inccorect_mail(self):
+        response = self.client.get(
+            reverse(
+                'message', kwargs={'pk': self.message.id}
+            ),
+            headers={'Authorization': 'bearer ' + jwt.encode(
+                {'email': 'asfasfsaf'}, JWT_SECRET_KEY, algorithm="HS256"
+            )}
+        )
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(
+            response.json()['error_message'], 'you are not authorised'
+        )
