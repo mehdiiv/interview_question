@@ -54,3 +54,19 @@ class MessagesViews(View):
             return JsonResponse({'messages': messages_list}, status=200)
         except AuthorizeError:
             return render_error('you are not authorised')
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class MessageView(View):
+    def get(self, request, pk):
+        try:
+            user = authorization(request.headers.get('Authorization'))
+            message = Message.objects.filter(user=user, id=pk)
+            if not message.exists():
+                return render_error('message does not exist')
+            message_list = []
+            for item in message:
+                message_list.append(model_to_dict(item))
+            return JsonResponse({'message': message_list}, status=200)
+        except AuthorizeError:
+            return render_error('you are not authorised')
