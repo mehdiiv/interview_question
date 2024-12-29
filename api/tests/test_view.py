@@ -1,7 +1,7 @@
 from django.test import TestCase, Client
 from django.urls import reverse
 from decouple import config
-from api.models import User
+from api.models import User, Message
 import json
 from api.common_methods import create_jwt
 
@@ -17,6 +17,10 @@ class ApiTest(TestCase):
         )
         self.client = Client()
         self.json_request = {'content_type': 'application/json'}
+        self.message = Message.objects.create(
+            user_id=self.user.id, title='testtiltle', body='testbody'
+            )
+        self.bearer_token = 'Bearer ' + create_jwt(self.user.email)
 
     def test_api_user_create(self):
         response = self.client.post(
@@ -131,3 +135,117 @@ class ApiTest(TestCase):
         for item in response.json().get('users'):
             users_dic.append(item.get('id'))
         self.assertEqual(users_dic, [1, 2, 3])
+
+    def test_api_message_create(self):
+        response = self.client.post(
+            reverse('messages'),
+            json.dumps({"title": "testtitle2", "body": "testbody2"}),
+            **self.json_request, headers={'Authorization': self.bearer_token}
+            )
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json().get('title'), 'testtitle2')
+
+    def test_api_message_create_wrong_date(self):
+        self.api_message_create_invalid_data_invaldi_jwt()
+        self.api_message_create_invalid_data_invaldi_not_exist_user()
+        self.api_message_create_invalid_data_null_mail()
+        self.api_message_create_invalid_data_empty_string_mail()
+        self.api_message_create_invalid_json()
+        self.api_message_create_invalid_empty_title()
+        self.api_message_create_invalid_data_invaldi_without_jwt()
+
+    def api_message_create_invalid_data_invaldi_jwt(self):
+        response = self.client.post(
+            reverse('messages'),
+            json.dumps({"title": "testtitle2", "body": "testbody2"}),
+            **self.json_request, headers={'Authorization': 'invalidjwt'}
+              )
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(
+            response.json()['error_message'], 'you are not authorised'
+            )
+
+    def api_message_create_invalid_data_invaldi_not_exist_user(self):
+        response = self.client.post(
+            reverse('messages'),
+            json.dumps({"title": "testtitle2", "body": "testbody2"}),
+            **self.json_request,
+            headers={
+                'Authorization': 'bearer ' + create_jwt('notexsit@test.test')
+                }
+            )
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(
+            response.json()['error_message'], 'you are not authorised'
+            )
+
+    def api_message_create_invalid_data_invaldi_without_jwt(self):
+        response = self.client.post(
+            reverse('messages'),
+            json.dumps({"title": "testtitle2", "body": "testbody2"}),
+            **self.json_request
+            )
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(
+            response.json()['error_message'], 'you are not authorised'
+            )
+
+    def api_message_create_invalid_data_null_mail(self):
+        response = self.client.post(
+            reverse('messages'),
+            json.dumps({"title": "testtitle2", "body": "testbody2"}),
+            **self.json_request,
+            headers={
+                'Authorization': 'bearer ' + create_jwt(None)
+                }
+            )
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(
+            response.json()['error_message'], 'you are not authorised'
+              )
+
+    def api_message_create_invalid_data_empty_string_mail(self):
+        response = self.client.post(
+            reverse('messages'),
+            json.dumps({"title": "testtitle2", "body": "testbody2"}),
+            **self.json_request,
+            headers={'Authorization': 'bearer ' + create_jwt('')}
+            )
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(
+            response.json()['error_message'], 'you are not authorised'
+            )
+
+    def api_message_create_invalid_data_inccorect_mail(self):
+        response = self.client.post(
+            reverse('messages'),
+            json.dumps({"title": "testtitle2", "body": "testbody2"}),
+            **self.json_request,
+            headers={'Authorization': 'bearer ' + create_jwt('asfasfasf')}
+              )
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(
+            response.json()['error_message'], 'email is incorrect'
+            )
+
+    def api_message_create_invalid_json(self):
+        response = self.client.post(
+            reverse('messages'),
+            json.dumps({"title": "testtitle2", "body": "testbody2"})+'sfsf',
+            **self.json_request,
+            headers={'Authorization': self.bearer_token}
+            )
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(response.json()['error_message'], 'invalid json')
+
+    def api_message_create_invalid_empty_title(self):
+        response = self.client.post(
+            reverse('messages'),
+            json.dumps({"title": "", "body": "testbody2"}),
+            **self.json_request,
+            headers={'Authorization': self.bearer_token}
+            )
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(
+            response.json()['error_message'], 'title cannot be empty'
+              )
