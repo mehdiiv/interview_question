@@ -70,3 +70,30 @@ class MessageView(View):
             return JsonResponse({'message': message_list}, status=200)
         except AuthorizeError:
             return render_error('you are not authorised')
+
+    def post(self, request, pk):
+        try:
+            user = authorization(request.headers.get('Authorization'))
+            message = Message.objects.filter(user=user, id=pk)
+            if not message.exists():
+                return render_error('message does not exist')
+            error, message_load_data = fetch_data(request.body)
+            if error:
+                return render_error('invalid json')
+            if message_load_data.get(
+                'title'
+            ) == '' or message_load_data.get('title') is None:
+                return render_error('title cannot be empty')
+            data = {'title': message_load_data.get(
+                'title'
+            ), 'body': message_load_data.get('body')}
+            message = message[0]
+            for field, value in data.items():
+                if value is not None:
+                    setattr(message, field, value)
+            message.save()
+            return JsonResponse(
+                {'message': model_to_dict(message)}, status=200
+            )
+        except AuthorizeError:
+            return render_error('you are not authorised')

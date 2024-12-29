@@ -444,3 +444,158 @@ class ApiTest(TestCase):
         self.assertEqual(
             response.json()['error_message'], 'you are not authorised'
         )
+
+    def test_api_message_update(self):
+        response = self.client.post(
+            reverse('message', kwargs={'pk': self.message.id}),
+            json.dumps({"title": "updatetitle", "body": "updatebody"}),
+            **self.json_request,
+            headers={'Authorization': self.bearer_token}
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json().get('message').get('title'), 'updatetitle'
+        )
+
+    def test_api_message_update_wrong_date(self):
+        self.api_message_update_not_exist_pk()
+        self.api_message_update_invalid_data_invaldi_jwt()
+        self.api_message_update_invalid_data_not_exist_mail()
+        self.api_message_update_invalid_data_null_mail()
+        self.api_message_update_invalid_data_empty_string_mail()
+        self.api_message_update_invalid_data_inccorect_mail()
+        self.api_message_update_invalid_data_null_request()
+        self.api_message_update_invalid_data_null_tittle()
+        self.api_message_update_invalid_data_without_tittle()
+
+    def api_message_update_without_jwt(self):
+        response = self.client.post(
+            reverse('message', kwargs={'pk': self.message.id}),
+            json.dumps({"title": "updatetitle", "body": "updatebody"}),
+            **self.json_request,
+            headers={'Authorization': self.bearer_token}
+        )
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(
+            response.json()['error_message'], 'you are not authorised'
+        )
+
+    def api_message_update_not_exist_pk(self):
+        response = self.client.post(
+            reverse('message', kwargs={'pk': 1024}),
+            json.dumps({"title": "updatetitle", "body": "updatebody"}),
+            **self.json_request,
+            headers={'Authorization': self.bearer_token}
+        )
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(
+            response.json()['error_message'],
+            'message does not exist'
+        )
+
+    def api_message_update_invalid_data_invaldi_jwt(self):
+        response = self.client.post(
+            reverse('message', kwargs={'pk': self.message.id}),
+            json.dumps({"title": "updatetitle", "body": "updatebody"}),
+            **self.json_request,
+            headers={'Authorization': 'invalidjsfswt'}
+        )
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(
+            response.json()['error_message'],
+            'you are not authorised'
+        )
+
+    def api_message_update_invalid_data_not_exist_mail(self):
+        response = self.client.post(
+            reverse('message', kwargs={'pk': self.message.id}),
+            json.dumps({"title": "updatetitle", "body": "updatebody"}),
+            **self.json_request,
+            headers={'Authorization': 'bearer ' + jwt.encode(
+                {'email': 'notexsit@test.test'},
+                JWT_SECRET_KEY, algorithm="HS256"
+            )}
+        )
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(
+            response.json()['error_message'], 'you are not authorised'
+        )
+
+    def api_message_update_invalid_data_null_mail(self):
+        response = self.client.post(
+            reverse('message', kwargs={'pk': self.message.id}),
+            json.dumps({"title": "updatetitle", "body": "updatebody"}),
+            **self.json_request,
+            headers={'Authorization': 'bearer ' + jwt.encode(
+                {'email': None}, JWT_SECRET_KEY, algorithm="HS256"
+            )}
+        )
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(
+            response.json()['error_message'], 'you are not authorised'
+        )
+
+    def api_message_update_invalid_data_empty_string_mail(self):
+        response = self.client.post(
+            reverse('message', kwargs={'pk': self.message.id}),
+            json.dumps({"title": "updatetitle", "body": "updatebody"}),
+            **self.json_request,
+            headers={'Authorization': 'bearer ' + jwt.encode(
+                {'email': ''}, JWT_SECRET_KEY, algorithm="HS256"
+            )}
+        )
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(
+            response.json()['error_message'], 'you are not authorised'
+        )
+
+    def api_message_update_invalid_data_inccorect_mail(self):
+        response = self.client.post(
+            reverse(
+                'message', kwargs={'pk': self.message.id}
+            ),
+            json.dumps({"title": "updatetitle", "body": "updatebody"}),
+            **self.json_request,
+            headers={'Authorization': 'bearer ' + jwt.encode(
+                {'email': 'asfasfsaf'}, JWT_SECRET_KEY, algorithm="HS256"
+            )}
+        )
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(
+            response.json()['error_message'], 'you are not authorised'
+        )
+
+    def api_message_update_invalid_data_null_request(self):
+        response = self.client.post(
+            reverse('message', kwargs={'pk': self.message.id}),
+            **self.json_request,
+            headers={'Authorization': self.bearer_token}
+        )
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(
+            response.json()['error_message'], 'title cannot be empty'
+        )
+
+    def api_message_update_invalid_data_null_tittle(self):
+        response = self.client.post(
+            reverse('message', kwargs={'pk': self.message.id}),
+            json.dumps({"title": "", "body": "updatebody"}),
+            **self.json_request,
+            headers={'Authorization': self.bearer_token}
+        )
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(
+            response.json()['error_message'], 'title cannot be empty'
+        )
+
+    def api_message_update_invalid_data_without_tittle(self):
+        response = self.client.post(
+            reverse('message', kwargs={'pk': self.message.id}),
+            json.dumps({"body": "updatebody"}),
+            **self.json_request,
+            headers={'Authorization': self.bearer_token}
+        )
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(
+            response.json()['error_message'], 'title cannot be empty'
+        )
